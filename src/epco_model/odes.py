@@ -27,7 +27,7 @@ from .pk_submodel import update_dydt_pk
 from .trafficking_submodel import update_dydt_trafficking
 from .binding_submodel import update_dydt_binding
 from .tcell_activation_submodel import update_dydt_tcell_activation
-# from .bcell_kill_submodel import update_dydt_bcell_kill
+from .bcell_kill_submodel import update_dydt_bcell_kill
 # from .tumor_submodel import update_dydt_tumor
 
 
@@ -50,8 +50,8 @@ def rhs(t: float, y: np.ndarray, params: ModelParameters) -> np.ndarray:
     update_dydt_trafficking(t, y, params, dydt)
     update_dydt_binding(t, y, params, dydt)
     update_dydt_tcell_activation(t, y, params, dydt)
+    update_dydt_bcell_kill(t, y, params, dydt)
     # TODO: uncomment/add these as you implement the corresponding modules
-    # update_dydt_bcell_kill(t, y, params, dydt)
     # update_dydt_tumor(t, y, params, dydt)
 
     return dydt
