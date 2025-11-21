@@ -1,5 +1,5 @@
 # parameters.py
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict
 import copy
 import math
@@ -90,12 +90,13 @@ class TumorKillingParameters:
 
 @dataclass
 class ModelParameters:
-    pk: PKSubmodelParameters = PKSubmodelParameters()
-    trafficking: LymphocyteTraffickingParameters = LymphocyteTraffickingParameters()
-    binding: EpcoritamabBindingParameters = EpcoritamabBindingParameters()
-    activation: TCellActivationParameters = TCellActivationParameters()
-    bkill: BCellKillingParameters = BCellKillingParameters()
-    tumor: TumorKillingParameters = TumorKillingParameters()
+    pk: PKSubmodelParameters = field(default_factory=PKSubmodelParameters)
+    trafficking: LymphocyteTraffickingParameters = field(default_factory=LymphocyteTraffickingParameters)
+    binding: EpcoritamabBindingParameters = field(default_factory=EpcoritamabBindingParameters)
+    activation: TCellActivationParameters = field(default_factory=TCellActivationParameters)
+    bkill: BCellKillingParameters = field(default_factory=BCellKillingParameters)
+    tumor: TumorKillingParameters = field(default_factory=TumorKillingParameters)
+
 
 
 def get_default_parameters() -> ModelParameters:
