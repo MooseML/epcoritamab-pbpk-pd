@@ -20,6 +20,7 @@
 from enum import IntEnum
 import numpy as np
 from .parameters import ModelParameters
+import numpy as np 
 
 class StateIx(IntEnum):
     # PK states (amounts or concentrations: decide once & be consistent)
@@ -83,6 +84,13 @@ class StateIx(IntEnum):
     ATC_TUMOR_NODE = 38
     PATC_TUMOR_NODE = 39
 
+    # ---- Tumor burden ----
+    TUMOR_CELLS_TOTAL = 40
+    
+    # ---- Tumor-specific binding in tumor node ----
+    CD20_AB_DIMER_TUMOR = 41
+    TRIMER_TUMOR = 42
+
 
 N_STATES = max(StateIx) + 1  # assumes enum values are 0..N-1
 
@@ -100,7 +108,7 @@ def get_initial_state(params: ModelParameters) -> np.ndarray:
     y0[StateIx.DRUG_LYMPH] = 0.0
 
     traf = params.trafficking
-    pk   = params.pk
+    pk = params.pk
 
     # ---------- Helper: total pools from "2% in blood" assumption ----------
     Vblood_L = traf.Vblood
@@ -182,5 +190,19 @@ def get_initial_state(params: ModelParameters) -> np.ndarray:
     y0[StateIx.ATC_TUMOR_NODE] = 0.0
     y0[StateIx.PATC_TUMOR_NODE] = 0.0
 
+    # ---------- Tumor baseline ----------
+    tum = params.tumor
+    r0_cm = tum.Tumor_r0  # cm
+
+    # Same density as in tumor_submodel
+    rho = 1e9  # cells / cm^3
+    V0_cm3 = (4.0 / 3.0) * np.pi * (r0_cm ** 3)
+    N0_cells = rho * V0_cm3
+
+    y0[StateIx.TUMOR_CELLS_TOTAL] = N0_cells
+
+    # ---------- Tumor-specific binding (in tumor node) ----------
+    y0[StateIx.CD20_AB_DIMER_TUMOR] = 0.0
+    y0[StateIx.TRIMER_TUMOR] = 0.0
     return y0
 

@@ -64,8 +64,8 @@ class EpcoritamabBindingParameters:
 
 @dataclass
 class TCellActivationParameters:
-    sim_slope: float = 0.007 * 1e6 # ((10^6 cells/day) * (cell/molecule)) Rate of T-cell activation against B cells
-    sim_slopetumor: float = 7e-6  * 1e6 # ((10^6 cells/day) * (cell/molecule)) Rate of T-cell activation against tumor cells
+    sim_slope: float = 0.007 # ((10^6 cells/day) * (cell/molecule)) Rate of T-cell activation against B cells
+    sim_slopetumor: float = 7e-6 # ((10^6 cells/day) * (cell/molecule)) Rate of T-cell activation against tumor cells
     Trimer_Threshold: float = 24 # (molecules/cell) Trimer formation threshold leading to 100% of first-order T-cell activation
     expand_factor: float = 9.27 # (1/day) First-order rate constant describing clonal expansion of activated T cells
     koutATC: float = 0.05 # (1/day) Describes elimination of activated and clonally expanded T cells 
