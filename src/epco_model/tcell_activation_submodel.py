@@ -16,8 +16,9 @@ AVOGADRO = 6.022_140_76e23  # molecules/mol
 NMOL_TO_MOLE = 1e-9         # mol per nmol
 
 # NOTE: All lymphocyte states (T, B, ATC) are in **cells**, not 10^6 cells.
-# sim_slope and sim_slopetumor are given in ((10^6 cells/day) * (cell/molecule)),
-# so we convert them to (cells/day * cell/molecule) by multiplying by 1e6.
+# sim_slope and sim_slopetumor are stored in parameters.py with paper values
+# in units ((10^6 cells/day) * (cell/molecule)).
+# We convert them to (cells/day * cell/molecule) by multiplying by 1e6.
 
 
 def _trimers_per_cell(
@@ -74,8 +75,9 @@ def update_dydt_tcell_activation(
     pk = params.pk
 
     # Convert rates from (10^6 cells/day * cell/molecule) to (cells/day * cell/molecule)
-    sim_slope_cells = act.sim_slope      # you already multiplied by 1e6 in parameters.py
-    sim_slope_tumor_cells = act.sim_slopetumor
+    # Paper values are in (10^6 cells/day * cell/molecule), so multiply by 1e6 to get (cells/day * cell/molecule)
+    sim_slope_cells = act.sim_slope * 1e6
+    sim_slope_tumor_cells = act.sim_slopetumor * 1e6
 
     # Effective elimination rate (0 before TAD+Tp)
     kout_eff = _effective_kout_ATC(t, act)
@@ -171,10 +173,10 @@ def update_dydt_tcell_activation(
     dATC["lymph"]  += +knl * ATC_node   - klp * ATC_lymph
 
     # pATC_B trafficking
-    dPATC["blood"]  += -kpt * pATC_blood  + klp * pATC_lymph
+    dPATC["blood"] += -kpt * pATC_blood  + klp * pATC_lymph
     dPATC["spleen"] += +kpt * pATC_blood  - ktn * pATC_spleen
-    dPATC["node"]   += +ktn * pATC_spleen - knl * pATC_node
-    dPATC["lymph"]  += +knl * pATC_node   - klp * pATC_lymph
+    dPATC["node"] += +ktn * pATC_spleen - knl * pATC_node
+    dPATC["lymph"] += +knl * pATC_node   - klp * pATC_lymph
 
     # ------------- 3) Write back into dydt -----------------
     for c in comps:
@@ -184,18 +186,42 @@ def update_dydt_tcell_activation(
         dydt[ATC_ix]  += dATC[name]
         dydt[pATC_ix] += dPATC[name]
 
-    # ------------- 4) Tumor-directed ATC (skeleton) -----------------
-    # Once you have tumor states and tumor-specific trimers, you can:
-    # - Use TRIMER_NODE as a proxy for tumor trimers or a dedicated TRIMER_TUMOR state.
-    # - Use sim_slope_tumor_cells and Trimer_Threshold for stepwise activation:
-    #
-    #   tri_per_tumor_cell = _trimers_per_cell(A_tri_tumor, N_tumor_reachable)
-    #
-    #   if tri_per_tumor_cell < act.Trimer_Threshold:
-    #       v_act_tumor = 0.01 * sim_slope_tumor_cells * act.Trimer_Threshold
-    #   else:
-    #       v_act_tumor = sim_slope_tumor_cells * tri_per_tumor_cell
-    #
-    # and then apply similar dynamics to ATC_TUMOR_NODE / PATC_TUMOR_NODE without trafficking.
-    #
-    # For now we leave these states as 0 until the tumor submodel is implemented.
+        # ------------- 4) Tumor-directed ATC activation (real implementation) -----------------
+
+        # Tumor total cells
+        N_tumor = y[StateIx.TUMOR_CELLS_TOTAL]
+
+        # If no tumor left, keep ATC_TUMOR_NODE and PATC_TUMOR_NODE at 0
+        if N_tumor > 0.0:
+
+            # --- Approximate tumor trimers for now using node trimer pool ---
+            A_tri_tumor_nmols = y[StateIx.TRIMER_TUMOR]  # real tumor trimers now
+            
+            # Trimers per tumor cell (molecules / cell)
+            tri_per_tum_cell = _trimers_per_cell(A_tri_tumor_nmols, N_tumor)
+
+            # RELU threshold rule from Supplement (lines 152-154):
+            # RELU = 0.01 when tri_per_tum_cell < Threshold
+            # RELU = 1.0  when tri_per_tum_cell >= Threshold
+            if tri_per_tum_cell < act.Trimer_Threshold:
+                v_act_tumor = 0.01 * sim_slope_tumor_cells * tri_per_tum_cell  # Fixed: use actual trimer count
+            else:
+                v_act_tumor = sim_slope_tumor_cells * tri_per_tum_cell
+
+            # --- ATC and pATC states ---
+            ATC_T = y[StateIx.ATC_TUMOR_NODE]
+            pATC_T = y[StateIx.PATC_TUMOR_NODE]
+
+            # --- Natural elimination after delay ---
+            kout_eff_T = kout_eff
+
+            # --- Update tumor ATC pools ---
+            dATC_tumor = v_act_tumor - kout_eff_T * ATC_T
+            dPATC_tumor = act.expand_factor * ATC_T - kout_eff_T * pATC_T
+
+            dydt[StateIx.ATC_TUMOR_NODE] += dATC_tumor
+            dydt[StateIx.PATC_TUMOR_NODE] += dPATC_tumor
+        else:
+            # If tumor is gone, keep values clamped to 0
+            dydt[StateIx.ATC_TUMOR_NODE] += 0.0
+            dydt[StateIx.PATC_TUMOR_NODE] += 0.0

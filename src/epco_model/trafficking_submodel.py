@@ -83,6 +83,7 @@ def _update_single_cell_type(
     #   dAF/dt = kt * ( (baseline / blood)^r - AF )
     eps = 1e-12  # avoid division by zero
     ratio = baseline_plasma_density / (cell_blood / (traf.Vblood * 1e6) + eps)
+    ratio = max(ratio, 1e-6)
     target_AF = ratio ** traf.r
     dAF = traf.kt * (target_AF - AF)
 

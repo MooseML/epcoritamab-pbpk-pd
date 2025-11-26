@@ -8,7 +8,6 @@ import numpy as np
 from .parameters import ModelParameters
 from .state_vector import StateIx
 
-
 def _bcell_kill_rate_compartment(
     N_ATC: float,
     N_pATC: float,
@@ -19,7 +18,9 @@ def _bcell_kill_rate_compartment(
     """
     Compute B-cell killing rate in ONE compartment, in units of [cells/day].
 
-    - N_ATC, N_pATC, N_B: counts of cells in this compartment (cells)
+    - N_ATC: count of virtual activated T cells (cells) - NOTE: only vATC, not pATC per paper
+    - N_pATC: count of proliferating ATCs (currently unused per paper equation)
+    - N_B: count of B cells in this compartment (cells)
     - V_L: compartment volume [L]
     - kkill_BC: parameter with units L^2 / (10^6 cells · day)
 
@@ -39,7 +40,8 @@ def _bcell_kill_rate_compartment(
     if N_B <= 0.0:
         return 0.0
 
-    N_eff = N_ATC + N_pATC  # total effector T cells (activated + expanded)
+    # Paper equation (Supplementary line 165) uses C_(vATC BC), NOT including pATC
+    N_eff = N_ATC  # Only vATC, not pATC, per paper
     if N_eff <= 0.0:
         return 0.0
 
@@ -58,7 +60,7 @@ def update_dydt_bcell_kill(
     y: np.ndarray,
     params: ModelParameters,
     dydt: np.ndarray,
-) -> None:
+) -> dict:
     """
     B-cell killing by activated T cells in blood, spleen, node, and lymph.
 
@@ -72,6 +74,7 @@ def update_dydt_bcell_kill(
     into the binding submodel (trimer -> CD3-Ab conversion); that can be
     layered in later if needed.
     """
+    bkill_events = {} 
     pk   = params.pk
     traf = params.trafficking
     bkill = params.bkill
@@ -92,6 +95,7 @@ def update_dydt_bcell_kill(
         kkill_BC=kkill_BC,
     )
     dydt[StateIx.B_BLOOD] -= v_kill_blood
+    bkill_events["blood"] = v_kill_blood
 
     # ---- Spleen ----
     B_spleen   = y[StateIx.B_SPLEEN]
@@ -107,7 +111,7 @@ def update_dydt_bcell_kill(
         kkill_BC=kkill_BC,
     )
     dydt[StateIx.B_SPLEEN] -= v_kill_spleen
-
+    bkill_events["spleen"] = v_kill_spleen
     # ---- Node ----
     B_node   = y[StateIx.B_NODE]
     ATC_node = y[StateIx.ATC_B_NODE]
@@ -122,7 +126,7 @@ def update_dydt_bcell_kill(
         kkill_BC=kkill_BC,
     )
     dydt[StateIx.B_NODE] -= v_kill_node
-
+    bkill_events["node"] = v_kill_node
     # ---- Lymph ----
     B_lymph   = y[StateIx.B_LYMPH]
     ATC_lymph = y[StateIx.ATC_B_LYMPH]
@@ -137,3 +141,5 @@ def update_dydt_bcell_kill(
         kkill_BC=kkill_BC,
     )
     dydt[StateIx.B_LYMPH] -= v_kill_lymph
+    bkill_events["lymph"] = v_kill_lymph
+    return bkill_events

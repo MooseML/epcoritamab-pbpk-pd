@@ -28,7 +28,7 @@ from .trafficking_submodel import update_dydt_trafficking
 from .binding_submodel import update_dydt_binding
 from .tcell_activation_submodel import update_dydt_tcell_activation
 from .bcell_kill_submodel import update_dydt_bcell_kill
-# from .tumor_submodel import update_dydt_tumor
+from .tumor_submodel import update_dydt_tumor
 
 
 def rhs(t: float, y: np.ndarray, params: ModelParameters) -> np.ndarray:
@@ -48,11 +48,14 @@ def rhs(t: float, y: np.ndarray, params: ModelParameters) -> np.ndarray:
     # PK submodel: drug disposition
     update_dydt_pk(t, y, params, dydt)
     update_dydt_trafficking(t, y, params, dydt)
-    update_dydt_binding(t, y, params, dydt)
     update_dydt_tcell_activation(t, y, params, dydt)
-    update_dydt_bcell_kill(t, y, params, dydt)
-    # TODO: uncomment/add these as you implement the corresponding modules
-    # update_dydt_tumor(t, y, params, dydt)
+
+    # get kill events from B cells and tumor
+    bkill_events = update_dydt_bcell_kill(t, y, params, dydt)
+    tumor_kill_events = update_dydt_tumor(t, y, params, dydt, tumor_type="FL")
+
+    # binding uses both
+    update_dydt_binding(t, y, params, dydt, bkill_events, tumor_kill_events)
 
     return dydt
 

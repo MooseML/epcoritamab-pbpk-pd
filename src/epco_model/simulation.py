@@ -111,6 +111,7 @@ def simulate_patient(
         for ev in dose_events:
             if abs(ev.time - t0) < 1e-9 and ev.route.upper() == "SC":
                 y0[StateIx.DRUG_SC] += ev.amount
+                y0[StateIx.INJ] = 1.0  # Injection effect triggers T-cell redistribution
 
         # Build solve_ivp kwargs, only include max_step if it's not None
         solve_kwargs = {
@@ -156,6 +157,7 @@ def simulate_patient(
         for ev in dose_events:
             if abs(ev.time - t_seg_start) < 1e-9 and ev.route.upper() == "SC":
                 y_current[StateIx.DRUG_SC] += ev.amount
+                y_current[StateIx.INJ] = 1.0  # Injection effect triggers T-cell redistribution
 
         # Time points for this segment (filter t_eval within segment)
         t_seg_eval = t_eval[(t_eval >= t_seg_start) & (t_eval <= t_seg_end)]
