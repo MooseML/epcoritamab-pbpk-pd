@@ -14,7 +14,7 @@ processes to dy/dt for the drug-related states:
 - Tumor lymph node
 - Lymph
 
-We work in *amounts* (e.g., nmol or mg), with concentrations computed as:
+We work in amounts ( nmol or mg), with concentrations computed as:
 
     C_compartment = A_compartment / V_compartment
 
@@ -46,9 +46,7 @@ def update_dydt_pk(
     """
     pk = params.pk
 
-    # -----------------------
     # Unpack drug amounts
-    # -----------------------
     A_sc = y[StateIx.DRUG_SC]
     A_plasma = y[StateIx.DRUG_PLASMA]
     A_tight = y[StateIx.DRUG_TIGHT]
@@ -57,10 +55,7 @@ def update_dydt_pk(
     A_node = y[StateIx.DRUG_NODE]
     A_lymph = y[StateIx.DRUG_LYMPH]
 
-    # -----------------------
     # Convert to concentrations
-    # -----------------------
-    # Guard against division by zero just in case.
     Vp = pk.Vplasma
     Vtight = pk.Vtight
     Vleaky = pk.Vleaky
@@ -75,27 +70,26 @@ def update_dydt_pk(
     C_node = A_node / Vnode if Vnode > 0 else 0.0
     C_lymph = A_lymph / Vlymph if Vlymph > 0 else 0.0
 
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # SC absorption
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # Amount leaving SC depot goes to lymph (per paper Eq. S1).
     Absorption = pk.ka * A_sc  # amount/day
     dA_sc = -Absorption        # loss from SC depot
 
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # Linear + nonlinear clearance from plasma
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # Linear: CL * C_plasma  (amount/day)
     CL_linear = pk.CL * C_plasma
 
     # Nonlinear: Vmax * C_plasma / (Km + C_plasma)
-    # Add a tiny epsilon to avoid division issues if Km ~ 0 (not the case here, but safe).
     eps = 1e-12
     CL_nonlinear = pk.Vmax * C_plasma / (pk.Km + C_plasma + eps)
 
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # Tissue <-> lymph & plasma <-> lymph exchange
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # For each tissue (tight, leaky, spleen):
     #   Plasma -> tissue: L_j * (1 - sigma_j) * C_plasma
     #   Tissue -> lymph:  L_j * C_tissue
@@ -136,9 +130,9 @@ def update_dydt_pk(
     Distribution_lymph_to_plasma = L_lymph * C_lymph
     # No reverse flow (plasma -> lymph) per paper Figure S1 and equations
 
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # Assemble compartment derivatives
-    # -----------------------
+    # ----------------------------------------------------------------------------
 
     # Plasma:
     #   - CL_linear
@@ -205,9 +199,9 @@ def update_dydt_pk(
         - Distribution_lymph_to_plasma
     )
 
-    # -----------------------
+    # ----------------------------------------------------------------------------
     # Add contributions to global dydt
-    # -----------------------
+    # ----------------------------------------------------------------------------
     dydt[StateIx.DRUG_SC] += dA_sc
     dydt[StateIx.DRUG_PLASMA] += dA_plasma
     dydt[StateIx.DRUG_TIGHT] += dA_tight
