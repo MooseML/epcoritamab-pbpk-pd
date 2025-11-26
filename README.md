@@ -124,6 +124,7 @@ Replicates key figures from Li et al. (2022):
 - **T-cell activation**: Trimer threshold = 24 molecules/cell, expansion rate = 9.27 day⁻¹
 - **Tumor kill**: k_kill = 0.165 L²/(10⁶ cells·day)
 - **Tumor growth**: k_growth (DLBCL) = 0.0301 day⁻¹, k_growth (FL) = 0.0038 day⁻¹
+- **Tumor density**: 1×10⁹ cells/cm³ (from Li et al. 2022, standard oncology assumption)
 
 ### Inter-Patient Variability
 Lognormal sampling with CV% from Li et al. (2022):
