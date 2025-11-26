@@ -121,6 +121,7 @@ Replicates key figures from Li et al. (2022):
 
 ### Key Parameters
 - **PK**: V_plasma = 2.6 L, CL = 2.47 L/day, k_a = 0.131 day⁻¹
+- **Lymphocyte distribution**: 2% blood, 60% spleen, 38% lymph (Westermann & Pabst 1992)
 - **T-cell activation**: Trimer threshold = 24 molecules/cell, expansion rate = 9.27 day⁻¹
 - **Tumor kill**: k_kill = 0.165 L²/(10⁶ cells·day)
 - **Tumor growth**: k_growth (DLBCL) = 0.0301 day⁻¹, k_growth (FL) = 0.0038 day⁻¹
@@ -229,6 +230,9 @@ Lognormal sampling with CV% from Li et al. (2022):
 
 **Primary Reference:**
 - Li C, et al. (2022). "Semimechanistic Physiologically-Based Pharmacokinetic/Pharmacodynamic Model of Epcoritamab in Patients with Relapsed or Refractory B-Cell Non-Hodgkin Lymphoma." *Clinical Pharmacology & Therapeutics*, 112(6), 1294-1308. https://doi.org/10.1002/cpt.2729
+
+**Key Supporting References:**
+- Westermann J, Pabst R. (1992). "Distribution of lymphocyte subsets and natural killer cells in the human body." *Clin Investig*, 70, 539-544. (Source of "2% in blood" lymphocyte distribution)
 
 
 ## License
