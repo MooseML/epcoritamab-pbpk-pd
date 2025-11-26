@@ -1,7 +1,5 @@
 # trafficking_submodel.py
-# Takes T-cell, B-cell, ATC populations and returns:
-# dT_comp/dt terms from trafficking + natural death + production + injection effect + homeostasis
-# trafficking_submodel.py
+
 """
 Lymphocyte trafficking and turnover submodel.
 ---------------------------------------------
@@ -35,18 +33,15 @@ from .state_vector import StateIx
 
 def _update_single_cell_type(
     *,
-    # state indices for this cell type
     ix_blood: int,
     ix_spleen: int,
     ix_node: int,
     ix_lymph: int,
     ix_af: int,
-    # parameters
     kin: float,
     kout: float,
     baseline_plasma_density: float,
     params: ModelParameters,
-    # global state
     y: np.ndarray,
     dydt: np.ndarray,
 ) -> None:
@@ -67,27 +62,25 @@ def _update_single_cell_type(
     """
     traf = params.trafficking
 
-    # Unpack states
     cell_blood = y[ix_blood]
     cell_spleen = y[ix_spleen]
     cell_node = y[ix_node]
     cell_lymph = y[ix_lymph]
 
-    AF = y[ix_af]  # adaptive feedback state
-
+    AF = y[ix_af] 
     # Injection-effect compartment (shared for T and B)
     INJ = y[StateIx.INJ]
 
-    # ---------- Homeostasis (adaptive feedback) ----------
+    # Homeostasis (adaptive feedback) 
     # AF dynamics:
     #   dAF/dt = kt * ( (baseline / blood)^r - AF )
-    eps = 1e-12  # avoid division by zero
+    eps = 1e-12  
     ratio = baseline_plasma_density / (cell_blood / (traf.Vblood * 1e6) + eps)
     ratio = max(ratio, 1e-6)
     target_AF = ratio ** traf.r
     dAF = traf.kt * (target_AF - AF)
 
-    # ---------- Production ----------
+
     # Zero-order production into blood, scaled by AF:
     Ksyn = kin * AF  # cells/day
 
@@ -112,7 +105,7 @@ def _update_single_cell_type(
     death_node = kout * cell_node
     death_lymph = kout * cell_lymph
 
-    # ---------- Assemble compartment derivatives ----------
+    # Assemble compartment derivatives 
     dCell_blood = (
         + Ksyn
         - death_blood
@@ -138,7 +131,7 @@ def _update_single_cell_type(
         - Flow_lymph_to_blood
     )
 
-    # ---------- Write back to global dydt ----------
+    # Write back to global dydt 
     dydt[ix_blood] += dCell_blood
     dydt[ix_spleen] += dCell_spleen
     dydt[ix_node] += dCell_node
@@ -162,7 +155,7 @@ def update_dydt_trafficking(
     """
     traf = params.trafficking
 
-    # ---------- T cells ----------
+    # T cells 
     _update_single_cell_type(
         ix_blood=StateIx.T_BLOOD,
         ix_spleen=StateIx.T_SPLEEN,
@@ -177,7 +170,7 @@ def update_dydt_trafficking(
         dydt=dydt,
     )
 
-    # ---------- B cells ----------
+    # B cells 
     _update_single_cell_type(
         ix_blood=StateIx.B_BLOOD,
         ix_spleen=StateIx.B_SPLEEN,
@@ -192,7 +185,7 @@ def update_dydt_trafficking(
         dydt=dydt,
     )
 
-    # ---------- Injection-effect compartment ----------
+    # Injection-effect compartment 
     # dINJ/dt = -kdecay * INJ  (decays between injections)
     INJ = y[StateIx.INJ]
     dINJ = -traf.kdecay * INJ
