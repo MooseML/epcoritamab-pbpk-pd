@@ -1,18 +1,3 @@
-# Plotting.py
-
-# Convenience functions for your paper-style figures:
-
-# plot_trimer_vs_dose(df_pop)
-
-# plot_bcell_depletion(time, df)
-
-# plot_tumor_trajectories(time, df, subset_patients)
-
-# plot_ORR_vs_dose(df_pop)
-
-# Keep them small and focused so your notebooks remain clean.
-
-# src/epco_model/plotting.py
 # src/epco_model/plotting.py
 
 from __future__ import annotations
@@ -25,10 +10,6 @@ from .parameters import ModelParameters
 from .state_vector import StateIx
 from math import pi
 
-
-# -----------------------------
-# Helper: tumor radius function
-# -----------------------------
 def _tumor_radius_from_cells(N_cells: np.ndarray) -> np.ndarray:
     TUMOR_CELL_DENSITY = 1e9  # cells / cm^3
     V_cm3 = N_cells / TUMOR_CELL_DENSITY
@@ -38,9 +19,7 @@ def _tumor_radius_from_cells(N_cells: np.ndarray) -> np.ndarray:
     return r
 
 
-# -----------------------------
 # Plasma concentration
-# -----------------------------
 def plot_plasma_concentration(
     t: np.ndarray,
     y: np.ndarray,
@@ -62,9 +41,7 @@ def plot_plasma_concentration(
     return ax
 
 
-# -----------------------------
 # Node trimers (tumor vs B)
-# -----------------------------
 def plot_node_trimers(
     t: np.ndarray,
     y: np.ndarray,
@@ -90,9 +67,7 @@ def plot_node_trimers(
     return ax
 
 
-# -----------------------------
 # Tumor trajectories
-# -----------------------------
 def plot_tumor_trajectory(
     t: np.ndarray,
     y: np.ndarray,
@@ -118,9 +93,7 @@ def plot_tumor_trajectory(
     return ax
 
 
-# -----------------------------
 # Tumor-directed ATC
-# -----------------------------
 def plot_tumor_ATCs(
     t: np.ndarray,
     y: np.ndarray,
@@ -143,9 +116,7 @@ def plot_tumor_ATCs(
     return ax
 
 
-# -----------------------------
 # B-cell depletion (blood)
-# -----------------------------
 def plot_bcell_depletion(
     t: np.ndarray,
     y: np.ndarray,
@@ -165,9 +136,7 @@ def plot_bcell_depletion(
     return ax
 
 
-# -----------------------------
 # Population plotting helpers
-# -----------------------------
 def plot_population_tumor_trajectories(
     t: np.ndarray,
     Ys: Sequence[np.ndarray],
