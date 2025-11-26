@@ -17,7 +17,7 @@ from .odes import rhs
 
 def simulate_patient(
     params: ModelParameters,
-    dosing: DosingRegimen,
+    dosing: Optional[DosingRegimen],
     t_span: Tuple[float, float] = (0.0, 84.0),
     t_eval: Optional[np.ndarray] = None,
     rtol: float = 1e-4,
@@ -42,16 +42,8 @@ def simulate_patient(
         t: Time array [n_time]
         y: State array [n_states, n_time]
     """
-    # Validate t_span
-    if t_span is None:
-        raise ValueError("t_span cannot be None")
-    if len(t_span) != 2:
-        raise ValueError(f"t_span must be a tuple of length 2, got {t_span}")
+    # Unpack t_span
     t0, t_end = t_span
-    if t0 is None or t_end is None:
-        raise ValueError(f"t_span values cannot be None: t0={t0}, t_end={t_end}")
-    if not isinstance(t0, (int, float)) or not isinstance(t_end, (int, float)):
-        raise ValueError(f"t_span values must be numeric: t0={t0} (type={type(t0)}), t_end={t_end} (type={type(t_end)})")
 
     # Validate dosing regimen
     if dosing is None:
@@ -59,43 +51,16 @@ def simulate_patient(
     if not hasattr(dosing, 'events') or dosing.events is None:
         raise ValueError("dosing.events is None or missing")
     
-    # Validate and filter dose events (remove None values)
+    # Filter out any None events (defensive check)
     valid_events = []
     for i, ev in enumerate(dosing.events):
         if ev is None:
             raise ValueError(f"DoseEvent at index {i} is None")
-        if not hasattr(ev, 'time') or ev.time is None:
-            raise ValueError(f"DoseEvent at index {i} has None time: {ev}")
-        if not hasattr(ev, 'amount') or ev.amount is None:
-            raise ValueError(f"DoseEvent at index {i} has None amount: {ev}")
-        if not isinstance(ev.time, (int, float)):
-            raise ValueError(f"DoseEvent at index {i} time must be numeric, got {type(ev.time)}: {ev}")
-        if not isinstance(ev.amount, (int, float)):
-            raise ValueError(f"DoseEvent at index {i} amount must be numeric, got {type(ev.amount)}: {ev}")
         valid_events.append(ev)
     
-    # Sort dose events by time
+    # Sort dose events by time and filter to events within t_span
     dose_events = sorted(valid_events, key=lambda e: e.time)
-    # Filter to events within time span (now safe since all times are numeric)
-    # Defensive check: ensure t0 and t_end are still valid
-    if t0 is None:
-        raise ValueError(f"t0 became None after validation! t_span was {t_span}")
-    if t_end is None:
-        raise ValueError(f"t_end became None after validation! t_span was {t_span}")
-    
-    # Build dose_times list with explicit error handling
-    dose_times = []
-    for ev in dose_events:
-        if ev.time is None:
-            raise ValueError(f"ev.time is None for event: {ev}")
-        try:
-            if t0 <= ev.time <= t_end:
-                dose_times.append(ev.time)
-        except TypeError as e:
-            raise TypeError(
-                f"Comparison failed: t0={t0} (type={type(t0)}), ev.time={ev.time} (type={type(ev.time)}), t_end={t_end} (type={type(t_end)}). "
-                f"Original error: {e}"
-            ) from e
+    dose_times = [ev.time for ev in dose_events if t0 <= ev.time <= t_end]
 
     # Generate t_eval if not provided
     if t_eval is None:
@@ -113,7 +78,6 @@ def simulate_patient(
                 y0[StateIx.DRUG_SC] += ev.amount
                 y0[StateIx.INJ] = 1.0  # Injection effect triggers T-cell redistribution
 
-        # Build solve_ivp kwargs, only include max_step if it's not None
         solve_kwargs = {
             "fun": lambda t, y: rhs(t, y, params),
             "t_span": (t0, t_end),
@@ -135,14 +99,13 @@ def simulate_patient(
 
     # Piecewise integration: integrate between each dose event
     all_times = [t0] + dose_times + [t_end]
-    all_times = sorted(set(all_times))  # Remove duplicates
+    all_times = sorted(set(all_times))  
     
     t_segments = []
     y_segments = []
 
     y_current = get_initial_state(params)
 
-    # Progress tracking for piecewise integration
     n_segments = len(all_times) - 1
     # Note: 24 segments from weekly dosing is normal; only warn if excessive
     if n_segments > 50:  # Only log if unusually many segments
@@ -202,7 +165,6 @@ def simulate_patient(
         # Update state for next segment
         y_current = sol.y[:, -1]
 
-    # Concatenate all segments
     t_full = np.concatenate(t_segments)
     y_full = np.concatenate(y_segments, axis=1)
 
