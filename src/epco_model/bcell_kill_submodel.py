@@ -1,6 +1,4 @@
 # bcell_kill_submodel.py
-# Adds second-order term -kkill_BC * ATC * B to the B-cell state derivatives in each compartment.
-
 from __future__ import annotations
 
 import numpy as np
@@ -40,8 +38,8 @@ def _bcell_kill_rate_compartment(
     if N_B <= 0.0:
         return 0.0
 
-    # Paper equation (Supplementary line 165) uses C_(vATC BC), NOT including pATC
-    N_eff = N_ATC  # Only vATC, not pATC, per paper
+    # Paper equation uses C_(vATC BC), NOT including pATC
+    N_eff = N_ATC # Only vATC, not pATC
     if N_eff <= 0.0:
         return 0.0
 
@@ -75,14 +73,14 @@ def update_dydt_bcell_kill(
     layered in later if needed.
     """
     bkill_events = {} 
-    pk   = params.pk
+    pk = params.pk
     traf = params.trafficking
     bkill = params.bkill
 
     kkill_BC = bkill.kkill_BC
 
-    # ---- Blood ----
-    B_blood   = y[StateIx.B_BLOOD]
+    # Blood 
+    B_blood = y[StateIx.B_BLOOD]
     ATC_blood = y[StateIx.ATC_B_BLOOD]
     pATC_blood = y[StateIx.PATC_B_BLOOD]
 
@@ -97,8 +95,8 @@ def update_dydt_bcell_kill(
     dydt[StateIx.B_BLOOD] -= v_kill_blood
     bkill_events["blood"] = v_kill_blood
 
-    # ---- Spleen ----
-    B_spleen   = y[StateIx.B_SPLEEN]
+    # Spleen 
+    B_spleen = y[StateIx.B_SPLEEN]
     ATC_spleen = y[StateIx.ATC_B_SPLEEN]
     pATC_spleen = y[StateIx.PATC_B_SPLEEN]
 
@@ -112,8 +110,8 @@ def update_dydt_bcell_kill(
     )
     dydt[StateIx.B_SPLEEN] -= v_kill_spleen
     bkill_events["spleen"] = v_kill_spleen
-    # ---- Node ----
-    B_node   = y[StateIx.B_NODE]
+    # Node 
+    B_node = y[StateIx.B_NODE]
     ATC_node = y[StateIx.ATC_B_NODE]
     pATC_node = y[StateIx.PATC_B_NODE]
 
@@ -127,8 +125,8 @@ def update_dydt_bcell_kill(
     )
     dydt[StateIx.B_NODE] -= v_kill_node
     bkill_events["node"] = v_kill_node
-    # ---- Lymph ----
-    B_lymph   = y[StateIx.B_LYMPH]
+    # Lymph 
+    B_lymph = y[StateIx.B_LYMPH]
     ATC_lymph = y[StateIx.ATC_B_LYMPH]
     pATC_lymph = y[StateIx.PATC_B_LYMPH]
 
