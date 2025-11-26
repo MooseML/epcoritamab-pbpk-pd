@@ -104,17 +104,9 @@ def clinical_phaseI_regimen_mg(
     prime_mg  = priming_fraction * full_mg
     interm_mg = intermediate_fraction * full_mg
 
-    # Validate calculations didn't produce None
-    if prime_mg is None or interm_mg is None:
-        raise ValueError(f"Calculated doses are None: prime_mg={prime_mg}, interm_mg={interm_mg}")
-
     prime_nmol  = mg_to_nmol(prime_mg,  mw_g_per_mol)
     interm_nmol = mg_to_nmol(interm_mg, mw_g_per_mol)
     full_nmol   = mg_to_nmol(full_mg,   mw_g_per_mol)
-
-    # Validate nmol values
-    if prime_nmol is None or interm_nmol is None or full_nmol is None:
-        raise ValueError(f"mg_to_nmol returned None: prime_nmol={prime_nmol}, interm_nmol={interm_nmol}, full_nmol={full_nmol}")
 
     d0  = first_dose_day          # trial day 1
     d7  = first_dose_day + 7.0    # trial day 8
