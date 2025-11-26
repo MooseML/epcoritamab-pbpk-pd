@@ -1,12 +1,4 @@
 # binding_submodel.py
-# Law of mass action equations:
-
-# free CD3/CD20
-
-# CD3–Ab, CD20–Ab dimers
-
-# trimers
-# binding_submodel.py
 """
 Epcoritamab binding submodel.
 -----------------------------
@@ -27,10 +19,8 @@ Species (per compartment, conceptually):
 - Trimers (T-Ab-B or T-Ab-tumor)
 
 The exact ODEs follow the "Epcoritamab-binding submodel" section
-of the supplementary methods. Once we have the R code / explicit
-equations, we will fill in the rate expressions below.
+of the supplementary methods. 
 """
-# binding_submodel.py
 
 from __future__ import annotations
 
@@ -41,8 +31,7 @@ from .state_vector import StateIx
 
 AVOGADRO = 6.022_140_76e23  # molecules / mol
 
-# If your T/B states are in "10^6 cells", set this to 1e6.
-# If they are raw cells, keep it at 1.0.
+#  raw cells, keep it at 1.0.
 CELLS_PER_UNIT = 1.0
 
 COMPARTMENTS = {
@@ -84,7 +73,6 @@ COMPARTMENTS = {
         tri_ix=StateIx.TRIMER_LYMPH,
         volume_name="Vlymph",
     ),
-    # Tumor-specific CD20 binding will be added later
 }
 
 
@@ -141,7 +129,7 @@ def _update_compartment_binding(
     C_CD3_free = max(C_CD3_tot - C_d3 - C_tri, 0.0)
     C_CD20_free = max(C_CD20_tot - C_d20 - C_tri, 0.0)
 
-    # ---- Elementary reaction rates (nmol/L/day) ----
+    # Elementary reaction rates (nmol/L/day) 
     # 1) Ab + CD3_free <-> CD3-Ab
     v_on3 = bind.konCD3 * C_ab * C_CD3_free
     v_off3 = bind.koffCD3 * C_d3
@@ -188,7 +176,7 @@ def _update_compartment_binding(
     # convert nmol/day → nmol/L/day
     v_kill_BC = v_kill_nmol_per_day / V
 
-    # ---- ODEs in concentration space (nmol/L/day) ----
+    # ODEs in concentration space (nmol/L/day) 
 
     # Free Ab
     dC_ab = (
@@ -223,7 +211,7 @@ def _update_compartment_binding(
         - v_kill_BC
     )
 
-    # ---- Back to amount space (nmol/day) ----
+    # Back to amount space (nmol/day) 
     dydt[drug_ix] += dC_ab * V
     dydt[d3_ix]   += dC_d3 * V
     dydt[d20_ix]  += dC_d20 * V
@@ -262,15 +250,15 @@ def _update_node_binding(
 
     V = getattr(pk, spec["volume_name"])  # Vnode [L]
 
-    # --- Amounts (nmol) ---
-    A_ab   = y[drug_ix]
-    A_d3   = y[d3_ix]
+    # Amounts (nmol) 
+    A_ab = y[drug_ix]
+    A_d3 = y[d3_ix]
     A_d20B = y[d20_B_ix]
     A_triB = y[tri_B_ix]
     A_d20T = y[d20_T_ix]
     A_triT = y[tri_T_ix]
 
-    # --- Concentrations (nmol/L) ---
+    # Concentrations (nmol/L) 
     C_ab   = A_ab   / V
     C_d3   = A_d3   / V
     C_d20B = A_d20B / V
@@ -278,21 +266,21 @@ def _update_node_binding(
     C_d20T = A_d20T / V
     C_triT = A_triT / V
 
-    # --- Receptor totals (nmol/L) ---
-    T_cells     = y[T_ix]
-    B_cells     = y[B_ix]
+    # Receptor totals (nmol/L) 
+    T_cells = y[T_ix]
+    B_cells = y[B_ix]
     Tumor_cells = y[StateIx.TUMOR_CELLS_TOTAL]
 
-    C_CD3_tot   = _receptor_conc_nmolar(T_cells, bind.RCD3, V)
+    C_CD3_tot = _receptor_conc_nmolar(T_cells, bind.RCD3, V)
     C_CD20B_tot = _receptor_conc_nmolar(B_cells, bind.RCD20, V)
     C_CD20T_tot = _receptor_conc_nmolar(Tumor_cells, bind.RCD20tumor, V)
 
-    # --- Free receptors ---
+    # Free receptors 
     C_CD3_free   = max(C_CD3_tot   - C_d3 - C_triB - C_triT, 0.0)
     C_CD20B_free = max(C_CD20B_tot - C_d20B - C_triB,        0.0)
     C_CD20T_free = max(C_CD20T_tot - C_d20T - C_triT,        0.0)
 
-    # ---- Elementary reaction rates (nmol/L/day) ----
+    # Elementary reaction rates (nmol/L/day) 
 
     # 1) Ab + CD3_free <-> CD3-Ab
     v_on3  = bind.konCD3 * C_ab * C_CD3_free
@@ -351,7 +339,7 @@ def _update_node_binding(
     v_kill_tumor_nmol_per_day = v_kill_tumor_cells_per_day * nmol_per_trimer
     v_kill_tumor = v_kill_tumor_nmol_per_day / V
 
-    # ---- ODEs in concentration space (nmol/L/day) ----
+    # ODEs in concentration space (nmol/L/day) 
 
     # Free Ab
     dC_ab = (
@@ -369,7 +357,7 @@ def _update_node_binding(
         - v_Tdeath_d3
         + v_Bdeath_triB
         + v_kill_BC
-        + v_kill_tumor    # <-- NEW: tumor trimers broken to CD3-Ab
+        + v_kill_tumor   
     )
     # CD20-Ab on B cells
     dC_d20B = (
@@ -394,7 +382,6 @@ def _update_node_binding(
         - v_tri_from20_T + v_tri_to_d20_T
         - v_int20T
         + v_Tdeath_triT
-        # (tumor cell death effects on trimers can be added later)
     )
 
     # Trimers on tumor cells
@@ -402,17 +389,17 @@ def _update_node_binding(
         + v_tri_from3_T + v_tri_from20_T
         - v_tri_to_d3_T - v_tri_to_d20_T
         - v_Tdeath_triT
-        - v_kill_tumor    # <-- NEW: trimers consumed by tumor cell killing
+        - v_kill_tumor    
     )
 
 
-    # ---- Back to amount space (nmol/day) ----
-    dydt[drug_ix]    += dC_ab   * V
-    dydt[d3_ix]      += dC_d3   * V
-    dydt[d20_B_ix]   += dC_d20B * V
-    dydt[tri_B_ix]   += dC_triB * V
-    dydt[d20_T_ix]   += dC_d20T * V
-    dydt[tri_T_ix]   += dC_triT * V
+    # Back to amount space (nmol/day) 
+    dydt[drug_ix] += dC_ab   * V
+    dydt[d3_ix] += dC_d3   * V
+    dydt[d20_B_ix] += dC_d20B * V
+    dydt[tri_B_ix] += dC_triB * V
+    dydt[d20_T_ix] += dC_d20T * V
+    dydt[tri_T_ix] += dC_triT * V
 
 def update_dydt_binding(
     t: float,
