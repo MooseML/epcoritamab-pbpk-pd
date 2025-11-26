@@ -1,13 +1,5 @@
 # tumor_submodel.py
-# Tumor growth:
 
-# logistic-like growth term
-
-# Tumor killing:
-
-# -kkill_tumor * ATC_tumor * reachable_cells
-
-# Update radius, volume, reachable layer, total tumor cells.
 from __future__ import annotations
 
 import numpy as np
@@ -16,9 +8,10 @@ from math import pi
 from .parameters import ModelParameters
 from .state_vector import StateIx
 
-# Assumed tumor cell density [cells / cm^3].
-# You can tweak this if you want tumor radius vs. cell count to match a
-# particular calibration. 1e9 cells/cm^3 is a reasonable ballpark.
+# Tumor cell density [cells / cm^3] from Li et al. (2022) Supplementary Material.
+# Paper uses 1E9 cells/mL (equivalent to 1e9 cells/cm³ since 1 mL = 1 cm³).
+# This is a standard assumption in oncology modeling for solid tumor density.
+# Reference: CPT_2729_2022-0235-s01
 TUMOR_CELL_DENSITY = 1e9  # cells per cm^3
 
 
@@ -88,7 +81,7 @@ def update_dydt_tumor(
 
     tumor_kill_events: dict[str, float] = {}
 
-    # --- Choose growth rate based on tumor type ---
+    # Choose growth rate based on tumor type
     if tumor_type.upper() == "DLBCL":
         k_growth = tum.kgrowth_DLBCL
     else:
@@ -103,20 +96,16 @@ def update_dydt_tumor(
         return tumor_kill_events
 
     # logistic-like growth
-    # growth = k_growth * N_tumor * (1.0 - tum.tumor_capacity * N_tumor)
     # tumor_capacity is 1 / (10^6 cells), N_tumor is in cells
     # so use N_tumor / 1e6 inside the logistic term
     growth = k_growth * N_tumor * (1.0 - tum.tumor_capacity * (N_tumor / 1e6))
 
-    # geometry + reachable cells (you already had this logic)
     r_cm = _radius_from_cells(N_tumor)
     frac_reach = _reachable_fraction(r_cm, tum.depth)
     N_reach = frac_reach * N_tumor
 
-    # Paper equation (Supplementary line 183) uses C_(vATC tumor), NOT including pATC
     ATC_tumor = y[StateIx.ATC_TUMOR_NODE]
-    # pATC_tumor = y[StateIx.PATC_TUMOR_NODE]  # NOT included per paper equation
-    N_ATC_eff = max(ATC_tumor, 0.0)  # Only vATC, not pATC
+    N_ATC_eff = max(ATC_tumor, 0.0) # Only vATC, not pATC
 
     if N_ATC_eff <= 0.0 or N_reach <= 0.0:
         kill_cells_per_day = 0.0
