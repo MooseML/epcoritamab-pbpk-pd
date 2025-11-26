@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Diagnostics and debug scripts
+diagnostics/
+
+# Documentation (work in progress)
+docs/
+
+# Example scripts (standalone figure generation - redundant with notebooks)
+examples/
+
+# Original paper files (PDFs, supplementary materials)
+original_paper/
+
+# Tests (placeholder - to be developed)
+tests/
+
+# Configuration files (placeholder - to be developed)
+configs/
+
+# Data files (mostly empty/unused)
+data/
+
+# Output images 
+# *.png
+# *.jpg
+# *.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
